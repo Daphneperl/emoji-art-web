@@ -7,23 +7,19 @@ let uploadedImage = null;
 const emojiFolder = "ios_emojis/";
 let emojiData = [];
 
-const EMOJI_SIZE = 20; // size of each emoji tile
-const EMOJI_SAMPLE_LIMIT = 60; // limit how many emojis to load
+const EMOJI_SIZE = 20; // pixel size for each emoji block
 
-// Load emojis and precompute average color
+// Load emojis listed in emojiList.js
 async function loadEmojis() {
-  const response = await fetch(emojiFolder); // this won't work locally — see note below
-  const html = await response.text();
-  const matches = [...html.matchAll(/href="([^?][^"]+\.png)"/g)].slice(0, EMOJI_SAMPLE_LIMIT);
-
-  for (let match of matches) {
-    const path = emojiFolder + match[1];
+  for (let filename of emojiFilenames) {
+    const path = emojiFolder + filename;
     const img = new Image();
     img.crossOrigin = "Anonymous";
     img.src = path;
 
     await new Promise((resolve) => {
       img.onload = () => {
+        // Draw emoji to temp canvas
         const tmp = document.createElement("canvas");
         tmp.width = tmp.height = EMOJI_SIZE;
         const tmpCtx = tmp.getContext("2d");
@@ -32,23 +28,28 @@ async function loadEmojis() {
 
         let [r, g, b, count] = [0, 0, 0, 0];
         for (let i = 0; i < data.length; i += 4) {
-          if (data[i + 3] > 0) { // alpha > 0
+          if (data[i + 3] > 0) {
             r += data[i];
             g += data[i + 1];
             b += data[i + 2];
             count++;
           }
         }
-        emojiData.push({
-          img,
-          avg: [r / count, g / count, b / count]
-        });
+
+        if (count > 0) {
+          emojiData.push({
+            img,
+            avg: [r / count, g / count, b / count]
+          });
+        }
+
         resolve();
       };
     });
   }
 }
 
+// Euclidean color distance
 function colorDistance(c1, c2) {
   return Math.sqrt(
     (c1[0] - c2[0]) ** 2 +
@@ -57,6 +58,7 @@ function colorDistance(c1, c2) {
   );
 }
 
+// Find best emoji match
 function findClosestEmoji(color) {
   let minDist = Infinity;
   let best = emojiData[0];
@@ -70,6 +72,7 @@ function findClosestEmoji(color) {
   return best.img;
 }
 
+// Handle image upload
 uploadInput.addEventListener("change", function (e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -88,9 +91,10 @@ uploadInput.addEventListener("change", function (e) {
   reader.readAsDataURL(file);
 });
 
+// Handle emojize
 emojizeBtn.addEventListener("click", async function () {
   if (!uploadedImage) {
-    alert("Upload an image first.");
+    alert("Please upload an image first.");
     return;
   }
 
@@ -100,13 +104,12 @@ emojizeBtn.addEventListener("click", async function () {
     emojizeBtn.textContent = "🎉 Emojize!";
   }
 
-  // Resize canvas
   const cols = Math.floor(uploadedImage.width / EMOJI_SIZE);
   const rows = Math.floor(uploadedImage.height / EMOJI_SIZE);
   canvas.width = cols * EMOJI_SIZE;
   canvas.height = rows * EMOJI_SIZE;
 
-  // Draw image to temp canvas
+  // Downscale image to match emoji grid
   const tmpCanvas = document.createElement("canvas");
   tmpCanvas.width = cols;
   tmpCanvas.height = rows;
