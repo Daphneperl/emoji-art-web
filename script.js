@@ -14,7 +14,6 @@ async function loadEmojis() {
   for (let filename of emojiFilenames) {
     const path = emojiFolder + filename;
     const img = new Image();
-    img.crossOrigin = "Anonymous";
     img.src = path;
 
     await new Promise((resolve) => {
