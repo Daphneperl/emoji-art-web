@@ -17,8 +17,10 @@ async function loadEmojis() {
     img.src = path;
 
     await new Promise((resolve) => {
+      let loaded = false;
+
       img.onload = () => {
-        // Draw emoji to temp canvas
+        loaded = true;
         const tmp = document.createElement("canvas");
         tmp.width = tmp.height = EMOJI_SIZE;
         const tmpCtx = tmp.getContext("2d");
@@ -41,9 +43,18 @@ async function loadEmojis() {
             avg: [r / count, g / count, b / count]
           });
         }
-
         resolve();
       };
+
+      img.onerror = () => {
+        console.warn("❌ Failed to load emoji:", path);
+        resolve();
+      };
+
+      // Fallback timeout if neither onload nor onerror fire
+      setTimeout(() => {
+        if (!loaded) resolve();
+      }, 2000);
     });
   }
 }
