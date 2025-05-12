@@ -766,5 +766,5 @@ const emojiFilenames = [
     "yellow-heart_1f49b.png",
     "yin-yang_262f-fe0f.png",
     "zany-face_1f92a.png",
-    "zipper-mouth-face_1f910.png",
+    "zipper-mouth-face_1f910.png"
 ];
